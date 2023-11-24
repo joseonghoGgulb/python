@@ -1,0 +1,237 @@
+import struct
+import numpy as np
+import math
+from tensorflow import keras
+import os
+
+
+def unpackBytes(data: bytes, l: int = 4, t: str = 'f'):
+    length = int(len(data)/l)
+
+    tmp = []
+    for i in range(0, length):
+        tmp.append(struct.unpack(t, data[0+l*i:l+l*i])[0])
+
+    return tmp
+
+
+def loadData(name: str, label: list):
+    with open(name, "rb") as f:
+        origin = f.read()
+
+    data = origin.split(b'\x02\x00')[1:]
+    output = []
+    for i in data:
+        tmp = byteToList(i)
+        try:
+            tmp['label'] = label.index(tmp['label'])
+            output.append(tmp)
+        except:
+            print('[error] label: '+str(tmp['label']))
+
+    return output
+
+
+def byteToList(data: bytes):
+    dataSize = struct.unpack('h', data[0:2])
+    userId = data[2:8]
+    pelvis = unpackBytes(data[8:36])
+    head = unpackBytes(data[36:64])
+    handR = unpackBytes(data[64:92])
+    handL = unpackBytes(data[92:120])
+    footR = unpackBytes(data[120:148])
+    footL = unpackBytes(data[148:176])
+    controllerR = unpackBytes(data[176:204])
+    controllerL = unpackBytes(data[204:232])
+    threadmill = unpackBytes(data[232:248])
+    eye = unpackBytes(data[248:264])
+    lip = unpackBytes(data[264:268])
+    time = unpackBytes(data[268:272])
+    label = data[272:274]
+    crc = data[274:275]
+    etx = data[275:277]
+
+    return {'pelvis': pelvis, 'head': head, 'handR': handR, 'handL': handL, 'footR': footR, 'footL': footL, 'controllerR': controllerR, 'controllerL': controllerL,  'time': time, 'label': label}
+
+
+def sevenToTwo(data: list):
+    output = []
+    output.append(data[0]**2+data[1]**2+data[2]**2)
+
+    x = data[3]/math.sin(math.acos(data[6]))
+    y = data[4]/math.sin(math.acos(data[6]))
+    z = data[5]/math.sin(math.acos(data[6]))
+
+    output.append(x**2+y**2+z**2)
+
+    return output
+
+
+def demensionReduction(data: list):
+    output = []
+    for i in data:
+        try:
+            i['pelvis'] = sevenToTwo(i['pelvis'])
+            i['head'] = sevenToTwo(i['head'])
+            i['handR'] = sevenToTwo(i['handR'])
+            i['handL'] = sevenToTwo(i['handL'])
+            i['footR'] = sevenToTwo(i['footR'])
+            i['footL'] = sevenToTwo(i['footL'])
+            i['controllerR'] = sevenToTwo(i['controllerR'])
+            i['controllerL'] = sevenToTwo(i['controllerL'])
+            output.append(i)
+        except:
+            print('[error] evaluation : '+str(i)+'\n')
+
+    return output
+
+
+def derivative(data: list):
+    out = []
+    for i in range(1, len(data)):
+        tmp = {}
+        for j in data[i]:
+            if j != 'time' and j != 'label':
+                deri = np.array(data[i][j])-np.array(data[i-1][j])
+                deri = deri/data[i]['time'][0]
+
+                tmp[j+'_der'] = list(deri)
+
+        tmp['time'] = data[i]['time']
+        tmp['label'] = data[i]['label']
+
+        out.append(tmp)
+
+    return out
+
+
+def concatData(data1: list, data2: list, data3: list):
+
+    data = []
+    for i in range(0, len(data3)):
+        tmp = data3[i]
+        tmp.update(data2[i+1])
+        tmp.update(data1[i+2])
+        data.append(tmp)
+
+    return data
+
+
+def loadDir(path: str, label: list):
+
+    x_data, y_data = [], []
+    file_list = os.listdir(path)
+    name_y_test = []
+    for file_name in file_list:
+        data = loadData(os.path.join(path, file_name), label=label)
+
+        data = demensionReduction(data)
+
+        data_1 = derivative(data)
+        data_2 = derivative(data_1)
+        data = concatData(data, data_1, data_2)
+
+        x, y = [], []
+        for i in data:
+            tmpX = []
+            for j in i:
+                if j == 'label':
+                    tmpY = i[j]
+                else:
+                    for k in i[j]:
+                        tmpX.append(k)
+
+            x.append(tmpX)
+            y.append(tmpY)
+
+        if len(x) > 100:
+            x_data.append(x[-101:-1])
+            y_data.append(y[-101:-1])
+            name_y_test.append(file_name)
+        else:
+            print('[error] data length : '+str(len(x)))
+
+    return x_data, y_data, name_y_test
+
+
+def build_model(unit: int = 49, activation: str = 'tanh'):
+    model = keras.models.Sequential()
+    model.add(keras.layers.InputLayer(input_shape=(100, 49)))
+    model.add(keras.layers.Dense(units=unit, activation='elu'))
+    model.add(
+        keras.layers.Bidirectional(keras.layers.GRU(
+            32, return_sequences=True, activation=activation))
+    )
+    model.add(keras.layers.Bidirectional(
+        keras.layers.GRU(100, activation=activation)))
+    model.add(keras.layers.Dense(units=100, activation='relu'))
+    # model.summary()
+    return model
+
+
+def loadAction(action: str):
+    if action == 'golf':
+        action = [b'00', b'AR', b'TB', b'BT', b'DS', b'IP', b'FT', b'FS'], {
+            0: 0, 1: 0, 2: 0, 3: 0, 4: 1, 5: 2, 6: 2, 7: 0}, 'golf'
+    elif action == 'bowling':
+        action = [b'00', b'AR', b'PS', b'DS', b'BT', b'FR', b'RL', b'FS'], {
+            0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 1, 6: 2, 7: 2}, 'bowling'
+    elif action == 'walking':
+        action = [b'00', b'HS', b'LR', b'MD', b'TM', b'PS', b'TO', b'MS', b'TS'], {
+            0: 0, 1: 0, 2: 1, 3: 1, 4: 1, 5: 1, 6: 2, 7: 2, 8: 2}, 'walking'
+
+    x_train, y_train, _ = loadDir(action[2], action[0])
+    x_test, y_test, name_y_test = loadDir(action[2]+'_test', action[0])
+
+    x_train = np.array(x_train)
+    y_train = np.array(y_train)
+    x_test = np.array(x_test)
+    y_test = np.array(y_test)
+
+    for i in range(0, y_train.shape[0]):
+        for j in range(0, y_train.shape[1]):
+            y_train[i][j] = action[1][y_train[i][j]]
+
+    for i in range(0, y_test.shape[0]):
+        for j in range(0, y_test.shape[1]):
+            y_test[i][j] = action[1][y_test[i][j]]
+
+    return x_train, y_train, x_test, y_test, name_y_test
+
+
+def trainModel(action: str, epochs: int, unit: int, activation: str):
+    x_train, y_train, x_test, y_test, _ = loadAction(action)
+
+    model = build_model(unit, activation)
+    model.compile(loss='mse', optimizer='adam', metrics=['mse'])
+    model.fit(x_train, y_train, epochs=epochs,
+              validation_data=(x_test, y_test))
+
+    model.save(action+'_model.keras')
+
+
+def predModel(action: str, path: str):
+    _, _, x_test, y_test, name_y_test = loadAction(action)
+    model = keras.models.load_model(path)
+
+    pred = model.predict(x_test)
+    pred = np.round(pred[:])
+
+    for i in range(0, pred.shape[0]):
+        rate = 0
+        for j in range(0, pred.shape[1]):
+            if pred[i][j] == y_test[i][j]:
+                rate += 1
+        print(name_y_test[i] + ': '+str(rate))
+
+    np.savetxt(action+'_pred.txt', pred, fmt='%d')
+    np.savetxt(action+'_test.txt', y_test, fmt='%d')
+
+
+if __name__ == '__main__':
+
+    action = 'golf'
+
+    trainModel(action, epochs=1, unit=49, activation='tanh')
+
+    predModel(action, path=action+'_model.keras')
