@@ -249,9 +249,9 @@ def predModel(action: str, path: str, x_test: list, y_test: list): # keras predi
 
 if __name__ == '__main__':
 
-    # action = 'golf'
+    action = 'golf'
     # action = 'bowling'
-    action = 'walking'
+    # action = 'walking'
 
     # predModel(action, path=action+'_model.keras', x_test=x_test, y_test=y_test)
 
