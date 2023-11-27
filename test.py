@@ -34,7 +34,7 @@ def loadData(name: str, label: list):  # read data file
     return output
 
 
-def loadData2(label: list, data: list):  # read data file
+def loadData2(action: str, data: list):  # read data file
 
     if action == 'golf':
         label= [b'00', b'AR', b'TB', b'BT', b'DS', b'IP', b'FT', b'FS']
@@ -206,7 +206,7 @@ def loadDir2(action:str, data:list):  # read whole data in directory
     x_data.append(x)
     y_data.append(y)
 
-    return x_data, y_data[2]
+    return x_data[0], y_data[0][2]
 
 def loadAction(action: str):  # load data with input string
     if action == 'golf':
@@ -324,7 +324,8 @@ if __name__ == '__main__':
 
     x_data, y_data = loadDir2(action, data=data)
 
-    print(0)
+    print(x_data)
+    print(y_data)
 
     # trainModel(action=action, epochs=500, x_train=x_train,
     #    y_train=y_train, x_test=x_test, y_test=y_test)
