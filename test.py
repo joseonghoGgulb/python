@@ -206,7 +206,7 @@ def loadDir2(action:str, data:list):  # read whole data in directory
     x_data.append(x)
     y_data.append(y)
 
-    return x_data[0], y_data[0][2]
+    return x_data, [y_data[0][2]]
 
 def loadAction(action: str):  # load data with input string
     if action == 'golf':
@@ -308,7 +308,6 @@ if __name__ == '__main__':
     action = 'bowling'
     # action = 'walking'
 
-    # predModel(action, path=action+'_model.keras', x_test=x_test, y_test=y_test)
 
     # x_train, y_train, x_test, y_test = loadAction(action)
 
@@ -326,6 +325,8 @@ if __name__ == '__main__':
 
     print(x_data)
     print(y_data)
+
+    predModel(action, path=action+'_model.keras', x_test=x_data, y_test=y_data)
 
     # trainModel(action=action, epochs=500, x_train=x_train,
     #    y_train=y_train, x_test=x_test, y_test=y_test)
