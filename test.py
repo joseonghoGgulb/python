@@ -236,7 +236,7 @@ def loadAction(action: str):  # load data with input string
     return x_train, y_train, x_test, y_test
 
 
-def loadAction2(action: str, trainPath: str, testPath: str):  # load data with input string
+def trainAction(action: str, path: str, epochs: int):  # load data with input string
     if action == 'golf':
         action = [b'00', b'AR', b'TB', b'BT', b'DS', b'IP', b'FT', b'FS'], {
             0: 0, 1: 0, 2: 0, 3: 0, 4: 1, 5: 2, 6: 2, 7: 0}, 'golf'  # label, index, keyword
@@ -247,16 +247,23 @@ def loadAction2(action: str, trainPath: str, testPath: str):  # load data with i
         action = [b'00', b'HS', b'LR', b'MD', b'TM', b'PS', b'TO', b'MS', b'TS'], {
             0: 0, 1: 0, 2: 1, 3: 1, 4: 1, 5: 1, 6: 2, 7: 2, 8: 2}, 'walking'
 
-    x_train, y_train = loadDir(trainPath, action[0])
-    x_test, y_test = loadDir(testPath, action[0])
+    x_data, y_data = loadDir(path, action[0])
 
-    for i in range(0, len(y_train)):  # change label to index number
-        y_train[i] = action[1][y_train[i]]
+    for i in range(0, len(y_data)):  # change label to index number
+        y_data[i] = action[1][y_data[i]]
 
-    for i in range(0, len(y_test)):  # change label to index number
-        y_test[i] = action[1][y_test[i]]
+    xlen = int(len(x_data)*0.5)
+    ylen = int(len(y_data)*0.5)
 
-    return x_train, y_train, x_test, y_test
+    x_train = x_data[0:xlen]
+    y_train = y_data[0:ylen]
+    x_test = x_data[xlen:-1]
+    y_test = y_data[ylen:-1]
+
+    pred = trainModel(action=action[2], epochs=epochs, x_train=x_train,
+                      y_train=y_train, x_test=x_test, y_test=y_test)
+
+    return pred
 
 
 def windowing(x: list, y: list, windowSize: int = 5, windowIndex: int = 3):  # split dataset by window
@@ -315,7 +322,7 @@ def trainModel(action: str, epochs: int, x_train: list, y_train: list, x_test: l
 
     df = pd.DataFrame(hist.history)  # display result of training
     df.plot()
-    plt.show()
+    plt.savefig('save.jpg')
 
     model.save(action+'_model.keras')
 
@@ -337,10 +344,12 @@ if __name__ == '__main__':
     action = 'bowling'
     # action = 'walking'
 
-    x_train, y_train, x_test, y_test = loadAction(action)
+    # x_train, y_train, x_test, y_test = loadAction(action)
 
-    trainModel(action=action, epochs=5, x_train=x_train,
-               y_train=y_train, x_test=x_train, y_test=y_train)
+    pred = trainAction(action, 'bowling', epochs=10)
+
+    # trainModel(action=action, epochs=5, x_train=x_train,
+    #    y_train=y_train, x_test=x_train, y_test=y_train)
 
     # x_data, y_data = loadDir2(action, data=data)
 
