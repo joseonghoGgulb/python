@@ -266,6 +266,25 @@ def trainAction(action: str, path: str, epochs: int):  # load data with input st
     return pred
 
 
+def predAction(action: str, path: str):  # load data with input string
+    if action == 'golf':
+        action = [b'00', b'AR', b'TB', b'BT', b'DS', b'IP', b'FT', b'FS'], {
+            0: 0, 1: 0, 2: 0, 3: 0, 4: 1, 5: 2, 6: 2, 7: 0}, 'golf'  # label, index, keyword
+    elif action == 'bowling':
+        action = [b'00', b'AR', b'PS', b'DS', b'BT', b'FR', b'RL', b'FS'], {
+            0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 1, 6: 2, 7: 2}, 'bowling'
+    elif action == 'walking':
+        action = [b'00', b'HS', b'LR', b'MD', b'TM', b'PS', b'TO', b'MS', b'TS'], {
+            0: 0, 1: 0, 2: 1, 3: 1, 4: 1, 5: 1, 6: 2, 7: 2, 8: 2}, 'walking'
+
+    x_data, _= loadDir(path, action[0])
+
+    pred = predModel(
+        action=action[2],  x_test=x_data, path=action[2]+'_model.keras')
+
+    return pred
+
+
 def windowing(x: list, y: list, windowSize: int = 5, windowIndex: int = 3):  # split dataset by window
 
     tmpx = []
@@ -327,14 +346,13 @@ def trainModel(action: str, epochs: int, x_train: list, y_train: list, x_test: l
     model.save(action+'_model.keras')
 
 
-def predModel(action: str, path: str, x_test: list, y_test: list):  # keras prediction function
+def predModel(action: str, path: str, x_test: list):  # keras prediction function
 
     model = keras.models.load_model(path)
 
     pred = model.predict(x_test)
 
     np.savetxt(action+'_pred.txt', pred)
-    np.savetxt(action+'_test.txt', y_test)
     print(pred)
 
 
@@ -346,7 +364,8 @@ if __name__ == '__main__':
 
     # x_train, y_train, x_test, y_test = loadAction(action)
 
-    pred = trainAction(action, 'bowling', epochs=10)
+    # pred = trainAction(action, 'bowling', epochs=10)
+    pred = predAction(action, 'bowling')
 
     # trainModel(action=action, epochs=5, x_train=x_train,
     #    y_train=y_train, x_test=x_train, y_test=y_train)
