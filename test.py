@@ -260,10 +260,10 @@ def trainAction(action: str, path: str, epochs: int):  # load data with input st
     x_test = x_data[xlen:-1]
     y_test = y_data[ylen:-1]
 
-    pred = trainModel(action=action[2], epochs=epochs, x_train=x_train,
-                      y_train=y_train, x_test=x_test, y_test=y_test)
+    model = trainModel(action=action[2], epochs=epochs, x_train=x_train,
+                       y_train=y_train, x_test=x_test, y_test=y_test)
 
-    return pred
+    return model
 
 
 def predAction(action: str, path: str):  # load data with input string
@@ -277,7 +277,7 @@ def predAction(action: str, path: str):  # load data with input string
         action = [b'00', b'HS', b'LR', b'MD', b'TM', b'PS', b'TO', b'MS', b'TS'], {
             0: 0, 1: 0, 2: 1, 3: 1, 4: 1, 5: 1, 6: 2, 7: 2, 8: 2}, 'walking'
 
-    x_data, _= loadDir(path, action[0])
+    x_data, _ = loadDir(path, action[0])
 
     pred = predModel(
         action=action[2],  x_test=x_data, path=action[2]+'_model.keras')
@@ -345,6 +345,8 @@ def trainModel(action: str, epochs: int, x_train: list, y_train: list, x_test: l
 
     model.save(action+'_model.keras')
 
+    return model
+
 
 def predModel(action: str, path: str, x_test: list):  # keras prediction function
 
@@ -364,7 +366,7 @@ if __name__ == '__main__':
 
     # x_train, y_train, x_test, y_test = loadAction(action)
 
-    pred = trainAction(action='bowling', path='bowling', epochs=10)
+    model = trainAction(action='bowling', path='bowling', epochs=10)
     pred = predAction(action='bowling', path='bowling')
 
     # trainModel(action=action, epochs=5, x_train=x_train,
