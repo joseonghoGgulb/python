@@ -365,7 +365,7 @@ if __name__ == '__main__':
     # x_train, y_train, x_test, y_test = loadAction(action)
 
     # pred = trainAction(action, 'bowling', epochs=10)
-    pred = predAction(action, 'bowling')
+    pred = predAction(action='bowling', path='bowling')
 
     # trainModel(action=action, epochs=5, x_train=x_train,
     #    y_train=y_train, x_test=x_train, y_test=y_train)
