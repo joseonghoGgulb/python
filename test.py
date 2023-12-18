@@ -167,90 +167,39 @@ def loadDir(path: str, label: list):  # read whole data in directory
         x_data.append(x)
         y_data.append(y)
 
+    y_data = labelingMeta(input=y_data, label=label)
+
     x_data, y_data = windowing(x_data, y_data)
 
     return x_data, y_data
 
 
-def loadDir2(action: str, data: list):  # read whole data in directory
+def labelingMeta(input: list, label: list):
+    y_data = input
+    for i in range(0, len(input)):
+        index = set(input[i])
+        for j in range(0, len(input[i])):
+            if j == 0:
+                index.remove(input[i][j])
 
-    if action == 'golf':
-        action = [b'00', b'AR', b'TB', b'BT', b'DS', b'IP', b'FT', b'FS'], {
-            0: 0, 1: 0, 2: 0, 3: 0, 4: 1, 5: 2, 6: 2, 7: 0}, 'golf'  # label, index, keyword
-    elif action == 'bowling':
-        action = [b'00', b'AR', b'PS', b'DS', b'BT', b'FR', b'RL', b'FS'], {
-            0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 1, 6: 2, 7: 2}, 'bowling'
-    elif action == 'walking':
-        action = [b'00', b'HS', b'LR', b'MD', b'TM', b'PS', b'TO', b'MS', b'TS'], {
-            0: 0, 1: 0, 2: 1, 3: 1, 4: 1, 5: 1, 6: 2, 7: 2, 8: 2}, 'walking'
+            elif input[i][j] in index:
+                index.remove(input[i][j])
+                y_data[i][j] += len(label)
 
-    x_data, y_data = [], []
-    data = loadData2(action[0], data=data)
-
-    data = demensionReduction(data)
-
-    data_1 = derivative(data)
-    data_2 = derivative(data_1)
-    data = concatData(data, data_1, data_2)
-
-    # split orignal data by using label tag .  input data is x . ouput data is y.
-    x, y = [], []
-    for i in data:
-        tmpX = []
-        for j in i:
-            if j == 'label':
-                tmpY = i[j]
-            else:
-                for k in i[j]:
-                    tmpX.append(k)
-
-        x.append(tmpX)
-        y.append(tmpY)
-
-    x_data.append(x)
-    y_data.append(y)
-
-    return x_data, [action[1][y_data[0][2]]]
-
-
-def loadAction(action: str):  # load data with input string
-    if action == 'golf':
-        action = [b'00', b'AR', b'TB', b'BT', b'DS', b'IP', b'FT', b'FS'], {
-            0: 0, 1: 0, 2: 0, 3: 0, 4: 1, 5: 2, 6: 2, 7: 0}, 'golf'  # label, index, keyword
-    elif action == 'bowling':
-        action = [b'00', b'AR', b'PS', b'DS', b'BT', b'FR', b'RL', b'FS'], {
-            0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 1, 6: 2, 7: 2}, 'bowling'
-    elif action == 'walking':
-        action = [b'00', b'HS', b'LR', b'MD', b'TM', b'PS', b'TO', b'MS', b'TS'], {
-            0: 0, 1: 0, 2: 1, 3: 1, 4: 1, 5: 1, 6: 2, 7: 2, 8: 2}, 'walking'
-
-    x_train, y_train = loadDir(action[2], action[0])
-    x_test, y_test = loadDir(action[2]+'_test', action[0])
-
-    for i in range(0, len(y_train)):  # change label to index number
-        y_train[i] = action[1][y_train[i]]
-
-    for i in range(0, len(y_test)):  # change label to index number
-        y_test[i] = action[1][y_test[i]]
-
-    return x_train, y_train, x_test, y_test
+    return y_data
 
 
 def trainAction(action: str, path: str, epochs: int):  # load data with input string
     if action == 'golf':
-        action = [b'00', b'AR', b'TB', b'BT', b'DS', b'IP', b'FT', b'FS'], {
-            0: 0, 1: 0, 2: 0, 3: 0, 4: 1, 5: 2, 6: 2, 7: 0}, 'golf'  # label, index, keyword
+        label = [b'00', b'AR', b'TB', b'BT', b'DS', b'IP', b'FT', b'FS']
+        classCount = 16
     elif action == 'bowling':
-        action = [b'00', b'AR', b'PS', b'DS', b'BT', b'FR', b'RL', b'FS'], {
-            0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 1, 6: 2, 7: 2}, 'bowling'
+        label = [b'00', b'AR', b'PS', b'DS', b'BT', b'FR', b'RL', b'FS']
+        classCount = 16
     elif action == 'walking':
-        action = [b'00', b'HS', b'LR', b'MD', b'TM', b'PS', b'TO', b'MS', b'TS'], {
-            0: 0, 1: 0, 2: 1, 3: 1, 4: 1, 5: 1, 6: 2, 7: 2, 8: 2}, 'walking'
-
-    x_data, y_data = loadDir(path, action[0])
-
-    for i in range(0, len(y_data)):  # change label to index number
-        y_data[i] = action[1][y_data[i]]
+        label = [b'00', b'HS', b'LR', b'MD', b'TM', b'PS', b'TO', b'MS', b'TS']
+        classCount = 18
+    x_data, y_data = loadDir(path, label=label)
 
     xlen = int(len(x_data)*0.5)
     ylen = int(len(y_data)*0.5)
@@ -260,27 +209,24 @@ def trainAction(action: str, path: str, epochs: int):  # load data with input st
     x_test = x_data[xlen:-1]
     y_test = y_data[ylen:-1]
 
-    model = trainModel(action=action[2], epochs=epochs, x_train=x_train,
-                       y_train=y_train, x_test=x_test, y_test=y_test)
+    model = trainModel(action=action, epochs=epochs, x_train=x_train,
+                       y_train=y_train, x_test=x_test, y_test=y_test, classCount=classCount)
 
     return model
 
 
 def predAction(action: str, path: str):  # load data with input string
     if action == 'golf':
-        action = [b'00', b'AR', b'TB', b'BT', b'DS', b'IP', b'FT', b'FS'], {
-            0: 0, 1: 0, 2: 0, 3: 0, 4: 1, 5: 2, 6: 2, 7: 0}, 'golf'  # label, index, keyword
+        label = [b'00', b'AR', b'TB', b'BT', b'DS', b'IP', b'FT', b'FS']
     elif action == 'bowling':
-        action = [b'00', b'AR', b'PS', b'DS', b'BT', b'FR', b'RL', b'FS'], {
-            0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 1, 6: 2, 7: 2}, 'bowling'
+        label = [b'00', b'AR', b'PS', b'DS', b'BT', b'FR', b'RL', b'FS']
     elif action == 'walking':
-        action = [b'00', b'HS', b'LR', b'MD', b'TM', b'PS', b'TO', b'MS', b'TS'], {
-            0: 0, 1: 0, 2: 1, 3: 1, 4: 1, 5: 1, 6: 2, 7: 2, 8: 2}, 'walking'
+        label = [b'00', b'HS', b'LR', b'MD', b'TM', b'PS', b'TO', b'MS', b'TS']
 
-    x_data, _ = loadDir(path, action[0])
+    x_data, _ = loadDir(path, label=label)
 
     pred = predModel(
-        action=action[2],  x_test=x_data, path=action[2]+'_model.keras')
+        action=action,  x_test=x_data, path=action+'_model.keras')
 
     return pred
 
@@ -310,9 +256,8 @@ def windowing(x: list, y: list, windowSize: int = 5, windowIndex: int = 3):  # s
     return tmpx, tmpy
 
 
-def trainModel(action: str, epochs: int, x_train: list, y_train: list, x_test: list, y_test: list,):  # keras model function
+def trainModel(action: str, epochs: int, x_train: list, y_train: list, x_test: list, y_test: list, classCount: int):  # keras model function
 
-    classCount = 3  # do not change
     featureCount = 49  # do not change
     windowSize = 5  # do not change
 
@@ -355,26 +300,9 @@ def predModel(action: str, path: str, x_test: list):  # keras prediction functio
     pred = model.predict(x_test)
 
     np.savetxt(action+'_pred.txt', pred)
-    print(pred)
 
 
 if __name__ == '__main__':
 
-    # action = 'golf'
-    action = 'bowling'
-    # action = 'walking'
-
-    # x_train, y_train, x_test, y_test = loadAction(action)
-
-    model = trainAction(action='bowling', path='bowling', epochs=10)
-    pred = predAction(action='bowling', path='bowling')
-
-    # trainModel(action=action, epochs=5, x_train=x_train,
-    #    y_train=y_train, x_test=x_train, y_test=y_train)
-
-    # x_data, y_data = loadDir2(action, data=data)
-
-    # print(x_data)
-    # print(y_data)
-
-    # predModel(action, path=action+'_model.keras', x_test=x_data, y_test=y_data)
+    model = trainAction(action='walking', path='walking', epochs=200)
+    # pred = predAction(action='golf', path='golf')
