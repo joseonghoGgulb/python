@@ -174,6 +174,42 @@ def loadDir(path: str, label: list):  # read whole data in directory
     return x_data, y_data
 
 
+def loadDir2(action: str, data: list):  # read whole data in directory
+
+    if action == 'golf':
+        action = [b'00', b'AR', b'TB', b'BT', b'DS', b'IP', b'FT', b'FS'], {
+            0: 0, 1: 0, 2: 0, 3: 0, 4: 1, 5: 2, 6: 2, 7: 0}, 'golf'  # label, index, keyword
+    elif action == 'bowling':
+        action = [b'00', b'AR', b'PS', b'DS', b'BT', b'FR', b'RL', b'FS'], {
+            0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 1, 6: 2, 7: 2}, 'bowling'
+    elif action == 'walking':
+        action = [b'00', b'HS', b'LR', b'MD', b'TM', b'PS', b'TO', b'MS', b'TS'], {
+            0: 0, 1: 0, 2: 1, 3: 1, 4: 1, 5: 1, 6: 2, 7: 2, 8: 2}, 'walking'
+
+    x_data, y_data = [], []
+    data = loadData2(action[0], data=data)
+
+    data = demensionReduction(data)
+
+    data_1 = derivative(data)
+    data_2 = derivative(data_1)
+    data = concatData(data, data_1, data_2)
+
+    # split orignal data by using label tag .  input data is x . ouput data is y.
+    x, y = [], []
+    for i in data:
+        tmpX = []
+        for j in i:
+            if j == 'label':
+                tmpY = i[j]
+            else:
+                for k in i[j]:
+                    tmpX.append(k)
+
+        x.append(tmpX)
+        y.append(tmpY)
+
+
 def labelingMeta(input: list, label: list):
     y_data = input
     for i in range(0, len(input)):
