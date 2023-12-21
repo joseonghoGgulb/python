@@ -183,7 +183,6 @@ def loadDir2(action: str, data: list):  # read whole data in directory
     elif action == 'walking':
         label = [b'00', b'HS', b'LR', b'MD', b'TM', b'PS', b'TO', b'MS', b'TS']
 
-    x_data, y_data = [], []
     data = loadData2(label=label, data=data)
 
     data = demensionReduction(data)
@@ -193,20 +192,17 @@ def loadDir2(action: str, data: list):  # read whole data in directory
     data = concatData(data, data_1, data_2)
 
     # split orignal data by using label tag .  input data is x . ouput data is y.
-    x, y = [], []
+    x  = []
     for i in data:
         tmpX = []
         for j in i:
-            if j == 'label':
-                tmpY = i[j]
-            else:
+            if j != 'label':
                 for k in i[j]:
                     tmpX.append(k)
 
         x.append(tmpX)
-        y.append(tmpY)
 
-    return x, y[2]
+    return x
 
 
 def labelingMeta(input: list, label: list):
